@@ -52,18 +52,25 @@ macro(set_external_library_dynamic)
             CURL
             NAMES curl
             PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-    find_library(
-            SSL
-            NAMES ssl
-            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-    find_library(
-            CRYPTO
-            NAMES crypto
-            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-    find_library(
-            LIBZ
-            NAMES z
-            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+    if (WIN32)
+        set(SSL "")
+        set(CRYPTO "")
+        set(LIBZ "")
+    else ()
+        find_library(
+                SSL
+                NAMES ssl
+                PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+        find_library(
+                CRYPTO
+                NAMES crypto
+                PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+        find_library(
+                LIBZ
+                NAMES z
+                PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+
+    endif ()
 endmacro()
 
 macro(set_external_library_dynamic_arm_linux)
@@ -116,7 +123,7 @@ else () # Host OS
     set(EXTERNAL_INCLUDE_DIR ${EXTERNAL_LIB_ROOT}/include)
     set(EXTERNAL_LIB_DIR ${EXTERNAL_LIB_ROOT}/lib)
     set_external_library_dynamic()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-rpath,./external/lib")
+    #    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-rpath,./external/lib")
 
     set(DEPLOY_PATH /Users/ju-jinyoo/Documents/deploy/curl)
     set(CMAKE_INSTALL_PREFIX ${DEPLOY_PATH}/${CMAKE_HOST_SYSTEM_NAME})
