@@ -37,24 +37,22 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
 
 int main(int argc, char *argv[])
 {
-    CURL *curl_handle;
     const char *request_url = "https://github.com/JuJin1324/CLion_stater/blob/master/README.md";
-    static const char *pagefilename = "README.md";
-    FILE *pagefile;
+    const char *save_filename = "README.md";
+    CURL *curl_handle;
+    FILE *save_file;
 
     curl_global_init(CURL_GLOBAL_ALL);
 
     /* init the curl session */
     curl_handle = curl_easy_init();
 
-    /* set URL to get here */
+    /* request url 설정 */
     curl_easy_setopt(curl_handle, CURLOPT_URL, request_url);
-
-    /* Switch on full protocol/debug output while testing */
+    /* 상세 정보 보기(콘솔에 request/body 관련 정보가 출력된다.) */
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
-
+    /* cert 검증 : 내가 가진 ARM 기기에서 할 수 없었음. */
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
-
     /* disable progress meter, set to 0L to enable it */
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
@@ -62,17 +60,17 @@ int main(int argc, char *argv[])
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 
     /* open the file */
-    pagefile = fopen(pagefilename, "wb");
-    if(pagefile) {
+    save_file = fopen(save_filename, "wb");
+    if(save_file) {
 
         /* write the page body to this file handle */
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, save_file);
 
         /* get it! */
         curl_easy_perform(curl_handle);
 
         /* close the header file */
-        fclose(pagefile);
+        fclose(save_file);
     }
 
     /* cleanup curl stuff */

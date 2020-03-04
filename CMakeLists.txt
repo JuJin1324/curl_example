@@ -36,6 +36,7 @@ macro(set_arm_linux_toolchain ARM_LINUX_TOOLCHAIN_DIR)
 endmacro()
 
 macro(set_external_library_static)
+    set(EXTERNAL_LIB_DIR ${CMAKE_SOURCE_DIR}/external/${CMAKE_HOST_SYSTEM_NAME}/lib)
     find_library(
             CURL
             NAMES libcurl.a
@@ -46,32 +47,43 @@ macro(set_external_library_static)
 endmacro()
 
 macro(set_external_library_dynamic)
+    set(EXTERNAL_LIB_DIR ${CMAKE_SOURCE_DIR}/external/${CMAKE_HOST_SYSTEM_NAME}/lib)
     find_library(
             CURL
             NAMES curl
             PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-    set(SSL "")
-    set(CRYPTO "")
-    set(LIBZ "")
-endmacro()
-
-macro(set_external_library_dynamic_arm_linux)
-    find_library(
-            CURL
-            NAMES curl
-            PATHS ${CMAKE_SOURCE_DIR}/external/ARM-Linux/lib NO_DEFAULT_PATH REQUIRED)
     find_library(
             SSL
             NAMES ssl
-            PATHS ${CMAKE_SOURCE_DIR}/external/ARM-Linux/lib NO_DEFAULT_PATH REQUIRED)
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
     find_library(
             CRYPTO
             NAMES crypto
-            PATHS ${CMAKE_SOURCE_DIR}/external/ARM-Linux/lib NO_DEFAULT_PATH REQUIRED)
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
     find_library(
             LIBZ
             NAMES z
-            PATHS ${CMAKE_SOURCE_DIR}/external/ARM-Linux/lib NO_DEFAULT_PATH REQUIRED)
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+endmacro()
+
+macro(set_external_library_dynamic_arm_linux)
+    set(EXTERNAL_LIB_DIR ${CMAKE_SOURCE_DIR}/external/ARM-Linux/lib)
+    find_library(
+            CURL
+            NAMES curl
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+    find_library(
+            SSL
+            NAMES ssl
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+    find_library(
+            CRYPTO
+            NAMES crypto
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
+    find_library(
+            LIBZ
+            NAMES z
+            PATHS ${EXTERNAL_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
 endmacro()
 
 ##########################################
@@ -104,7 +116,10 @@ else () # Host OS
     set(EXTERNAL_INCLUDE_DIR ${EXTERNAL_LIB_ROOT}/include)
     set(EXTERNAL_LIB_DIR ${EXTERNAL_LIB_ROOT}/lib)
     set_external_library_dynamic()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-rpath,./external/lib")
 
+    set(DEPLOY_PATH /Users/ju-jinyoo/Documents/deploy/curl)
+    set(CMAKE_INSTALL_PREFIX ${DEPLOY_PATH}/${CMAKE_HOST_SYSTEM_NAME})
 endif ()
 
 message("CURL : " ${CURL})
@@ -119,10 +134,28 @@ message("CMAKE_C_FLAGS : " ${CMAKE_C_FLAGS})
 include_directories(
         ${EXTERNAL_INCLUDE_DIR}
         src
+        deps
 )
+
+set(SDS
+        deps/sds/sds.c deps/sds/sds.h)
+set(HTTPCLIENT
+        src/network/httpclient.c src/network/httpclient.h ${SDS})
 
 add_executable(curl_simple_req src/curl_simple_req.c)
 target_link_libraries(curl_simple_req ${CURL} ${SSL} ${CRYPTO} ${LIBZ})
 
 add_executable(curl_file_req src/curl_file_req.c)
 target_link_libraries(curl_file_req ${CURL} ${SSL} ${CRYPTO} ${LIBZ})
+
+add_executable(httpclient_test test/httpclient_test.c ${HTTPCLIENT})
+target_link_libraries(httpclient_test ${CURL} ${SSL} ${CRYPTO} ${LIBZ})
+
+### Install
+INSTALL(TARGETS httpclient_test DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+### Install dynamic libraries
+INSTALL(FILES ${EXTERNAL_LIB_DIR}/libcrypto.44.dylib DESTINATION ${CMAKE_INSTALL_PREFIX}/external/lib)
+INSTALL(FILES ${EXTERNAL_LIB_DIR}/libcurl.4.dylib DESTINATION ${CMAKE_INSTALL_PREFIX}/external/lib)
+INSTALL(FILES ${EXTERNAL_LIB_DIR}/libssl.46.dylib DESTINATION ${CMAKE_INSTALL_PREFIX}/external/lib)
+INSTALL(FILES ${EXTERNAL_LIB_DIR}/libz.1.dylib DESTINATION ${CMAKE_INSTALL_PREFIX}/external/lib)
